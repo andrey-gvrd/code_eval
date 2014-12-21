@@ -1,0 +1,1 @@
+When connected, the peripheral also needs to determine if it should disconnect now, or stay connected. This decision is more relevant if the central device has not made any requests recently, or if the peripheral has not sent any data to the central device or is not expecting to do so for some time.
