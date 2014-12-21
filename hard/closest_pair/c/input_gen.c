@@ -5,14 +5,16 @@
 #include <math.h>   // sqrt, pow
 
 #define MAX_POINTS          (10000 + 1)
-#define MAX_SETS            (128)
+#define MAX_SETS            (8)
 #define MAX_NUMBER          (40000)
 
 int32_t main(int32_t argc, const char *argv[]) 
 {
     FILE *file = fopen("rnd_in.txt", "w");
+    printf("rand max: %u\n", RAND_MAX);
     for (uint64_t i = 0; i < MAX_SETS; i++) {
-        uint32_t nPoints = rand() % MAX_POINTS;
+        uint32_t nPoints = rand() % MAX_POINTS + 1;
+        printf("number of points: %u\n", nPoints);
         fprintf(file, "%u\n", nPoints);
         for (uint32_t j = 0; j < nPoints; j++) {
             uint32_t x, y;

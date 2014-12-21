@@ -4,8 +4,8 @@
 #include <ctype.h>  // isdigit
 #include <math.h>   // sqrt, pow
 
-#define MAX_POINTS          (10000)
-#define MAX_LINE_LENGTH     (2 * 5 + 2) // two 40000 points, a space and \n
+#define MAX_POINTS          (10000 + 1)
+#define MAX_LINE_LENGTH     (16) // two 40000 points, a space and \n
 #define MAX_DIST            (10000.0)
 
 typedef enum bool_e 
@@ -20,10 +20,10 @@ typedef struct point_s
     uint32_t y;
 } point_t;
 
-static uint32_t getNum(const char *str, uint32_t *pos)
+static uint64_t getNum(const char *str, uint32_t *pos)
 {
     uint32_t dstPos = 0;
-    char numbBuff[5] = {0};
+    char numbBuff[10] = {0};
     while (isdigit((int32_t)str[*pos])) {
         numbBuff[dstPos++] = str[(*pos)++];
     }
