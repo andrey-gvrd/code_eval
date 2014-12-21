@@ -1,12 +1,13 @@
-#include <stdio.h>
+#include <stdio.h>  // printf, sprintf
 #include <stdint.h>
 #include <stdlib.h> // atoi
-#include <string.h>
-#include <ctype.h>
+#include <ctype.h>  // isdigit
+#include <math.h>   // sqrt, pow
 
-#define MAX_SETS            (8)
+#define MAX_SETS            (32)
 #define MAX_POINTS          (10000)
 #define MAX_LINE_LENGTH     (2 * 5 + 2) // two 40000 points, a space and \n
+#define MAX_DIST            (10000.0)
 
 typedef enum bool_e 
 {
@@ -30,11 +31,17 @@ static uint32_t getNum(const char *str, uint32_t *pos)
 {
     uint32_t dstPos = 0;
     char numbBuff[5] = {0};
-    while (isdigit(str[*pos])) {
+    while (isdigit((int32_t)str[*pos])) {
         numbBuff[dstPos++] = str[(*pos)++];
     }
     (*pos)++;
     return atoi(numbBuff);
+}
+
+static float getDistance(point_t p1, point_t p2)
+{
+    point_t delta = { .x = abs(p1.x - p2.x), .y = abs(p1.y - p2.y)};
+    return sqrt(pow(delta.x, 2) + pow(delta.y, 2));
 }
 
 int32_t main(int32_t argc, const char *argv[]) 
@@ -52,16 +59,18 @@ int32_t main(int32_t argc, const char *argv[])
                 uint32_t pos = 0;
                 psArr[psArrCnt].point[pointCnt].x = getNum(&line[0], &pos);
                 psArr[psArrCnt].point[pointCnt].y = getNum(&line[0], &pos);
+                /*
                 printf("[%d][%d](%d) - [%d, %d]\n", 
                     psArrCnt, pointCnt, psArr[psArrCnt].len,
                     psArr[psArrCnt].point[pointCnt].x, 
                     psArr[psArrCnt].point[pointCnt].y);
+                */
                 pointCnt++;
             } else {
                 readingPoints = false;
                 pointCnt = 0;
                 psArrCnt++;
-                printf("\n");
+                //printf("\n");
             }
         } else {
             uint32_t pos = 0;
@@ -71,7 +80,22 @@ int32_t main(int32_t argc, const char *argv[])
     }
     /* Work with parsed data */
     for (uint32_t i = 0; i < psArrCnt; i++) {
-        printf("%d\n", i);
+        float min = MAX_DIST;
+        for (uint32_t j = 0; j < psArr[i].len - 1; j++) {
+            for (uint32_t k = j + 1; k < psArr[i].len; k++) {
+                float dist = getDistance(psArr[i].point[j], 
+                                         psArr[i].point[k]);
+                //printf("[%d] [%d]-[%d]: %.4f\n", i, j, k, dist);
+                if (dist < min) {
+                    min = dist;
+                }
+            }
+        }
+        if (min < MAX_DIST) {
+            printf("%.4f\n", min);
+        } else {
+            printf("INFINITY\n");
+        }
     }
     return 0;
 }
