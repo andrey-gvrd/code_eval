@@ -5,7 +5,7 @@
 #include <math.h>   // sqrt, pow
 
 #define MAX_POINTS          (10000 + 1)
-#define MAX_LINE_LENGTH     (16) // two 40000 points, a space and \n
+#define MAX_LINE_LENGTH     (1024)
 #define MAX_DIST            (10000.0)
 
 typedef enum bool_e 
@@ -23,7 +23,7 @@ typedef struct point_s
 static uint64_t getNum(const char *str, uint32_t *pos)
 {
     uint32_t dstPos = 0;
-    char numbBuff[10] = {0};
+    char numbBuff[1024] = {0};
     while (isdigit((int32_t)str[*pos])) {
         numbBuff[dstPos++] = str[(*pos)++];
     }
@@ -79,12 +79,16 @@ int32_t main(int32_t argc, const char *argv[])
                 pointCnt = 0;
             }
         } else {
-            for (uint32_t i = 0; i < MAX_POINTS; i++) {
+            for (uint32_t i = 0; i < len; i++) {
                 pArr[i].x = 0;
                 pArr[i].y = 0;
             }
             uint32_t pos = 0;
             len = getNum(&line[0], &pos);
+            if (len == 0) {
+                printf("INFINITY\n");
+                continue;
+            }
             readingPoints = true;
         }
     }
