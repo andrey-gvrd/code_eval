@@ -4,7 +4,6 @@
 #include <ctype.h>  // isdigit
 #include <math.h>   // sqrt, pow
 
-#define MAX_SETS            (32)
 #define MAX_POINTS          (10000)
 #define MAX_LINE_LENGTH     (2 * 5 + 2) // two 40000 points, a space and \n
 #define MAX_DIST            (10000.0)
@@ -20,12 +19,6 @@ typedef struct point_s
     uint32_t x;
     uint32_t y;
 } point_t;
-
-typedef struct pointSet_s
-{
-    point_t point[MAX_POINTS];
-    uint32_t len;
-} pointSet_t;
 
 static uint32_t getNum(const char *str, uint32_t *pos)
 {
@@ -46,55 +39,53 @@ static float getDistance(point_t p1, point_t p2)
 
 int32_t main(int32_t argc, const char *argv[]) 
 {
-    pointSet_t psArr[MAX_SETS];
+    point_t pArr[MAX_POINTS];
     FILE *file = fopen(argv[1], "r");
     char line[MAX_LINE_LENGTH];
     bool readingPoints = false;
-    uint32_t psArrCnt = 0;
     uint32_t pointCnt = 0;
-    /* Parse input file */
+    uint32_t len = 0;
     while (fgets(line, MAX_LINE_LENGTH, file)) {
         if (readingPoints) {
-            if (pointCnt <= psArr[psArrCnt].len - 1) {
+            if (pointCnt <= len - 1) {
                 uint32_t pos = 0;
-                psArr[psArrCnt].point[pointCnt].x = getNum(&line[0], &pos);
-                psArr[psArrCnt].point[pointCnt].y = getNum(&line[0], &pos);
+                pArr[pointCnt].x = getNum(&line[0], &pos);
+                pArr[pointCnt].y = getNum(&line[0], &pos);
                 /*
-                printf("[%d][%d](%d) - [%d, %d]\n", 
-                    psArrCnt, pointCnt, psArr[psArrCnt].len,
-                    psArr[psArrCnt].point[pointCnt].x, 
-                    psArr[psArrCnt].point[pointCnt].y);
+                printf("[%d](%d) - [%d, %d]\n", 
+                    pointCnt, len,
+                    pArr[pointCnt].x, 
+                    pArr[pointCnt].y);
                 */
                 pointCnt++;
             } else {
+                float min = MAX_DIST;
+                for (uint32_t j = 0; j < len - 1; j++) {
+                    for (uint32_t k = j + 1; k < len; k++) {
+                        float dist = getDistance(pArr[j], 
+                                                 pArr[k]);
+                        //printf("[%d]-[%d]: %.4f\n", j, k, dist);
+                        if (dist < min) {
+                            min = dist;
+                        }
+                    }
+                }
+                if (min < MAX_DIST) {
+                    printf("%.4f\n", min);
+                } else {
+                    printf("INFINITY\n");
+                }
                 readingPoints = false;
                 pointCnt = 0;
-                psArrCnt++;
-                //printf("\n");
             }
         } else {
+            for (uint32_t i = 0; i < MAX_POINTS; i++) {
+                pArr[i].x = 0;
+                pArr[i].y = 0;
+            }
             uint32_t pos = 0;
-            psArr[psArrCnt].len = getNum(&line[0], &pos);
+            len = getNum(&line[0], &pos);
             readingPoints = true;
-        }
-    }
-    /* Work with parsed data */
-    for (uint32_t i = 0; i < psArrCnt; i++) {
-        float min = MAX_DIST;
-        for (uint32_t j = 0; j < psArr[i].len - 1; j++) {
-            for (uint32_t k = j + 1; k < psArr[i].len; k++) {
-                float dist = getDistance(psArr[i].point[j], 
-                                         psArr[i].point[k]);
-                //printf("[%d] [%d]-[%d]: %.4f\n", i, j, k, dist);
-                if (dist < min) {
-                    min = dist;
-                }
-            }
-        }
-        if (min < MAX_DIST) {
-            printf("%.4f\n", min);
-        } else {
-            printf("INFINITY\n");
         }
     }
     return 0;
