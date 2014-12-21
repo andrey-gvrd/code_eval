@@ -17,6 +17,15 @@ typedef enum bool_e
     true
 } bool;
 
+/**
+ * Algorithm:
+ * Find out which number represents a space, find number sequences of desired 
+ * length which are surrounded by spaces (hopefully there's only one), figure
+ * out the value with which the sequence is encoded, decode the sequence and 
+ * print it out.
+*/
+
+/* Parsing function */
 static void createNumberMatrix(const char *fileName,
                                uint32_t matrix[][MAX_VALUES], uint32_t *columnCnt, uint32_t *rowCnt,
                                uint32_t *sequenceLength, char *knownChar)
@@ -57,7 +66,7 @@ static void createNumberMatrix(const char *fileName,
     }
 }
 
-static uint32_t mostFrequentNumber(const uint32_t array[], const uint32_t arrayLength)
+static uint32_t findSpace(const uint32_t array[], const uint32_t arrayLength)
 {
     uint32_t frequencyCnt[MAX_LINE_LENGTH] = {0};
     uint32_t temp[5] = {0};
