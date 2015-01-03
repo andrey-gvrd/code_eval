@@ -10,6 +10,15 @@ typedef enum {
     true = !false
 } bool;
 
+typedef enum {
+    ray225,
+    ray45,
+    space,
+    column,
+    prism,
+    wall
+} Elements_t;
+
 static void clearArray(char array[][ROOM_DIMENSIONS])
 {
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
@@ -30,22 +39,32 @@ static void printArray(char array[][ROOM_DIMENSIONS])
     printf("\n");
 }
 
-static bool isColumn(char c)
+static Elements_t identify(char c)
 {
-
-    return (c == 'o');
-}
-
-static bool isPrism(char c)
-{
-
-    return (c == '*');
-}
-
-static bool isWall(char c)
-{
-
-    return (c == '#');
+    Elements_t elementType = space;
+    switch (c) {
+        case '#': {
+            elementType = wall;
+            break;
+        }
+        case 'o': {
+            elementType = column;
+            break;
+        }
+        case '*': {
+            elementType = prism;
+            break;
+        }
+        case '\\': {
+            elementType = ray225;
+            break;
+        }
+        case '/': {
+            elementType = ray45;
+            break;
+        }
+    }
+    return elementType;
 }
 
 int32_t main(int32_t argc, const char *argv[]) 
