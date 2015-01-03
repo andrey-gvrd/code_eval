@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -std=c99 -pedantic-errors -Wall
+CFLAGS = -g -std=c99 #-pedantic-errors -Wall
 PROGRAM = ray_of_light
 RUN_ARGS = input/in.txt
 
