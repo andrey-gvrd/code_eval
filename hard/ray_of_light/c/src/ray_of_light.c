@@ -32,31 +32,8 @@ typedef struct {
     uint8_t y;
 } Point_t;
 
-static void clearArray(char array[][ROOM_DIMENSIONS])
-{
-    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
-        for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
-            array[i][j] = 0x00;
-        }
-    }
-}
-
-static void printArray(char array[][ROOM_DIMENSIONS])
-{
-    printf("\n");
-    /* Print top index */
-    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
-        printf("%d", i);
-    }
-    printf("\n\n");
-    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
-        for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
-            printf("%c", array[i][j]);
-        }
-        printf(" %d", i);   // Print right index
-        printf("\n");
-    }
-}
+static void clearArray(char array[][ROOM_DIMENSIONS]);
+static void printArray(char array[][ROOM_DIMENSIONS]);
 
 static Elements_t identify(char c)
 {
@@ -311,4 +288,33 @@ int32_t main(int32_t argc, const char *argv[])
         }
     }
     return 0;
+}
+
+/** 
+ * Array manipulattion functions 
+ */
+static void clearArray(char array[][ROOM_DIMENSIONS])
+{
+    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
+        for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
+            array[i][j] = 0x00;
+        }
+    }
+}
+
+static void printArray(char array[][ROOM_DIMENSIONS])
+{
+    printf("\n");
+    /* Print top index */
+    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
+        printf("%d", i);
+    }
+    printf("\n\n");
+    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
+        for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
+            printf("%c", array[i][j]);
+        }
+        printf(" %d", i);   // Print right index
+        printf("\n");
+    }
 }
