@@ -5,7 +5,12 @@
 
 #define ROOM_DIMENSIONS     (10)
 
-void clearArray(char array[][ROOM_DIMENSIONS])
+typedef enum {
+    false = 0,
+    true = !false
+} bool;
+
+static void clearArray(char array[][ROOM_DIMENSIONS])
 {
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
@@ -14,7 +19,7 @@ void clearArray(char array[][ROOM_DIMENSIONS])
     }
 }
 
-void printArray(char array[][ROOM_DIMENSIONS])
+static void printArray(char array[][ROOM_DIMENSIONS])
 {
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
@@ -23,6 +28,24 @@ void printArray(char array[][ROOM_DIMENSIONS])
         printf("\n");
     }
     printf("\n");
+}
+
+static bool isColumn(char c)
+{
+
+    return (c == 'o');
+}
+
+static bool isPrism(char c)
+{
+
+    return (c == '*');
+}
+
+static bool isWall(char c)
+{
+
+    return (c == '#');
 }
 
 int32_t main(int32_t argc, const char *argv[]) 
