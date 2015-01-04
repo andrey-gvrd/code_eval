@@ -1,10 +1,8 @@
 #include <stdio.h>  // printf, sprintf
 #include <stdint.h> // uintX_t
-#include <stdlib.h> // atoi
-#include <ctype.h>  // isdigit
 
 #define ROOM_DIMENSIONS     (10)
-#define MAX_DISTANCE        (40)
+#define MAX_DISTANCE        (20)
 
 typedef enum {
     false = 0,
@@ -23,12 +21,6 @@ static const char *ELEMENTS_STR[] = {
     "ray225", "ray45", "space", "column", "prism", "wall"
 };
 
-#define WALL_SIDE_NO        (0x00)
-#define WALL_SIDE_LEFT      (0x01)
-#define WALL_SIDE_TOP       (0x02)
-#define WALL_SIDE_RIGHT     (0x04)
-#define WALL_SIDE_BOTTOM    (0x08)
-
 typedef struct {
     bool left;
     bool top;
@@ -38,11 +30,13 @@ typedef struct {
 } Wall_t;
 
 typedef enum {
-    left = 0, up = 1, right = 2, down = 3
+    left = 0, up = 1, right = 2, down = 3, 
+    topLeft = 4, topRight = 5, bottomRight = 6, bottomLeft = 7
 } Direction_t;
 
 static const char *DIRECTION_STR[] = {
-    "left", "up", "right", "down"
+    "left", "up", "right", "down", 
+    "top left", "top right", "bottom right", "bottom left"
 };
 
 typedef struct {
@@ -51,7 +45,9 @@ typedef struct {
     Elements_t type;
 } Point_t;
 
-bool rayDone = false;   // Set if ray reaches a corner
+/* TODO: Move to a separate ray object */
+static bool rayDone = false;   // Set if ray reaches a corner or enters the path it has already taken
+static Direction_t rayDirection = down;
 
 static void clearArray(char array[][ROOM_DIMENSIONS]);
 static void printArray(char array[][ROOM_DIMENSIONS]);
@@ -119,7 +115,6 @@ static bool isActivePoint(char room[][ROOM_DIMENSIONS], Point_t *point, Elements
         printf("Point is within bounds\n");
         point->type = charToType(room[point->y][point->x]);
         printf("Point's type: %s\n", ELEMENTS_STR[point->type]);
-        printf("Current ray: %s\n", ELEMENTS_STR[currentRay]);
         if (point->type != currentRay) {
             return true;
         }
@@ -134,96 +129,62 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
        different ray, column, prism, wall */
     Point_t activePoint = { .x = 0, .y = 0 };
     if (point.type == ray45) {
-        Point_t topRightPoint = { .x = point.x + 1, 
-                                  .y = point.y - 1 };
-        bool topRightPotential = false;
-        Point_t bottomLeftPoint = { .x = point.x - 1, 
-                                    .y = point.y + 1 };
-        bool bottomLeftPotential = false;
-        printf("TR: [%d][%d]; BL: [%d][%d]\n", 
-            topRightPoint.x, topRightPoint.y, bottomLeftPoint.x, bottomLeftPoint.y);
-        /* Checking the top right point */
-        printf("Checking TR point\n");
-        if (isActivePoint(room, &topRightPoint, point.type)) {
-            printf("TR has potential\n");
-            topRightPotential = true;
-        }
-        /* Checking the bottom left point */
-        printf("Checking BL point\n");
-        if (isActivePoint(room, &bottomLeftPoint, point.type)) {
-            printf("BL has potential\n");
-            bottomLeftPotential = true;
-        }
-        /* If both point have potential to be selected, select that which has type space */
-        if (topRightPotential && bottomLeftPotential) {
-            if (topRightPoint.type == space) {
+        if (rayDirection == topRight) {
+            Point_t topRightPoint = { .x = point.x + 1, 
+                                      .y = point.y - 1 };
+            printf("TR: [%d][%d]\n", topRightPoint.x, topRightPoint.y);
+            printf("Checking TR point\n");
+            if (isActivePoint(room, &topRightPoint, point.type)) {
                 activePoint.x = topRightPoint.x;
                 activePoint.y = topRightPoint.y;
                 activePoint.type = topRightPoint.type;
             } else {
-                activePoint.x = bottomLeftPoint.x;
-                activePoint.y = bottomLeftPoint.y;
-                activePoint.type = bottomLeftPoint.type;
+                rayDone = true;
             }
-        } else {
-            if (topRightPotential) {
-                activePoint.x = topRightPoint.x;
-                activePoint.y = topRightPoint.y;
-                activePoint.type = topRightPoint.type;
-            } else if (bottomLeftPotential) {
+        } else if (rayDirection == bottomLeft) {
+            Point_t bottomLeftPoint = { .x = point.x - 1, 
+                                        .y = point.y + 1 };
+            printf("BL: [%d][%d]\n", bottomLeftPoint.x, bottomLeftPoint.y);
+            printf("Checking BL point\n");
+            if (isActivePoint(room, &bottomLeftPoint, point.type)) {
                 activePoint.x = bottomLeftPoint.x;
                 activePoint.y = bottomLeftPoint.y;
                 activePoint.type = bottomLeftPoint.type;
             } else {
                 rayDone = true;
             }
+        } else {
+            printf("Wrong ray direction\n");
         }
         printf("Active point: [%d][%d], %s\n", 
             activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
     } else if (point.type == ray225) {
-        Point_t topLeftPoint = { .x = point.x - 1, 
-                                 .y = point.y - 1 };
-        bool topLeftPotential = false;
-        Point_t bottomRightPoint = { .x = point.x + 1, 
-                                     .y = point.y + 1 };
-        bool bottomRightPotential = false;
-        printf("TL: [%d][%d]; BR: [%d][%d]\n", 
-            topLeftPoint.x, topLeftPoint.y, bottomRightPoint.x, bottomRightPoint.y);
-        /* Checking the top left point */
-        printf("Checking TL point\n");
-        if (isActivePoint(room, &topLeftPoint, point.type)) {
-            printf("TL has potential\n");
-            topLeftPotential = true;
-        }
-        /* Checking the bottom right point */
-        printf("Checking BR point\n");
-        if (isActivePoint(room, &bottomRightPoint, point.type)) {
-            printf("BR has potential\n");
-            bottomRightPotential = true;
-        }
-        /* If both point have potential to be selected, select that which has type space */
-        if (topLeftPotential && bottomRightPotential) {
-            if (topLeftPoint.type == space) {
-                activePoint.x = topLeftPoint.x;
-                activePoint.y = topLeftPoint.y;
-                activePoint.type = topLeftPoint.type;           
-            } else {
-                activePoint.x = bottomRightPoint.x;
-                activePoint.y = bottomRightPoint.y;
-                activePoint.type = bottomRightPoint.type;          
-            }
-        } else {
-            if (topLeftPotential) {
+        if (rayDirection == topLeft) {
+            Point_t topLeftPoint = { .x = point.x - 1, 
+                                     .y = point.y - 1 };
+            printf("TL: [%d][%d]\n", topLeftPoint.x, topLeftPoint.y);
+            printf("Checking TL point\n");
+            if (isActivePoint(room, &topLeftPoint, point.type)) {
                 activePoint.x = topLeftPoint.x;
                 activePoint.y = topLeftPoint.y;
                 activePoint.type = topLeftPoint.type;
-            } else if (bottomRightPotential) {
+            } else {
+                rayDone = true;
+            }
+        } else if (rayDirection == bottomRight) {
+            Point_t bottomRightPoint = { .x = point.x + 1, 
+                                         .y = point.y + 1 };
+            printf("BR: [%d][%d]\n", bottomRightPoint.x, bottomRightPoint.y);
+            printf("Checking BR point\n");
+            if (isActivePoint(room, &bottomRightPoint, point.type)) {
                 activePoint.x = bottomRightPoint.x;
                 activePoint.y = bottomRightPoint.y;
                 activePoint.type = bottomRightPoint.type;
             } else {
                 rayDone = true;
             }
+        } else {
+            printf("Wrong ray direction\n");
         }
         printf("Active point: [%d][%d], %s\n", 
             activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
@@ -255,17 +216,37 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
                 /* Figure out reflection direction */
                 Direction_t reflection = left;
                 if (wall.left) {
-                    if      (currentPoint.type == ray45)  reflection = down;
-                    else if (currentPoint.type == ray225) reflection = up;
+                    if (currentPoint.type == ray45) {
+                        reflection = down;
+                        rayDirection = bottomLeft;
+                    } else if (currentPoint.type == ray225) {
+                        reflection = up;
+                        rayDirection = topRight;
+                    }
                 } else if (wall.top) {
-                    if      (currentPoint.type == ray45)  reflection = right;
-                    else if (currentPoint.type == ray225) reflection = left;
+                    if (currentPoint.type == ray45) {
+                        reflection = right;
+                        rayDirection = bottomRight;
+                    } else if (currentPoint.type == ray225) {
+                        reflection = left;
+                        rayDirection = bottomLeft;
+                    }
                 } else if (wall.right) {
-                    if      (currentPoint.type == ray45)  reflection = up;
-                    else if (currentPoint.type == ray225) reflection = down;
+                    if (currentPoint.type == ray45) {
+                        reflection = up;
+                        rayDirection = topLeft;
+                    } else if (currentPoint.type == ray225) {
+                        reflection = down;
+                        rayDirection = bottomLeft;
+                    }
                 } else if (wall.bottom) {
-                    if      (currentPoint.type == ray45)  reflection = left;
-                    else if (currentPoint.type == ray225) reflection = right;
+                    if (currentPoint.type == ray45) {
+                        reflection = left;
+                        rayDirection = topLeft;
+                    } else if (currentPoint.type == ray225) {
+                        reflection = right;
+                        rayDirection = topRight;
+                    }
                 }
                 /* Calculate next point's coordinates */
                 switch (reflection) {
@@ -319,6 +300,26 @@ static Point_t getEntryPoint(char room[][ROOM_DIMENSIONS])
     return entryPoint;
 }
 
+static Direction_t getEntryDirection(Point_t entryPoint)
+{
+    Direction_t _rayDirection = down;
+    Wall_t wall = getWallSide(entryPoint);
+    if (entryPoint.type == ray45) {
+        if (wall.right || wall.top) {
+            _rayDirection = bottomLeft;
+        } else {
+            _rayDirection = topRight;
+        }
+    } else if (entryPoint.type == ray225) {
+        if (wall.left || wall.top) {
+            _rayDirection = bottomRight;
+        } else {
+            _rayDirection = topLeft;
+        }
+    }
+    return _rayDirection;
+}
+
 int32_t main(int32_t argc, const char *argv[]) 
 {   
     char room[ROOM_DIMENSIONS][ROOM_DIMENSIONS];
@@ -331,6 +332,9 @@ int32_t main(int32_t argc, const char *argv[])
             printArray(room);
             /* Find first ray */
             Point_t entryPoint = getEntryPoint(room);
+            /* Set initial direction of the ray */
+            rayDirection = getEntryDirection(entryPoint);
+            printf("Entry direction: %s\n", DIRECTION_STR[rayDirection]);
             /* Replace cells with appropriate rays */
             uint8_t travelledDistance = 0;
             Point_t currentPoint = { .x = entryPoint.x, .y = entryPoint.y,
