@@ -111,6 +111,22 @@ static bool isWithinBounds(Point_t point)
     return ((point.x < ROOM_DIMENSIONS) && (point.y < ROOM_DIMENSIONS));
 }
 
+static Point_t getNeighbour(Point_t point, Direction_t direction)
+{
+    Point_t newPoint = { .x = point.x, .y = point.y };
+    switch (direction) {
+        case left:        { newPoint.x--;               break; }
+        case topLeft:     { newPoint.x--; newPoint.y--; break; }
+        case top:         {               newPoint.y--; break; }
+        case topRight:    { newPoint.x++; newPoint.y--; break; }
+        case right:       { newPoint.x++;               break; }
+        case bottomRight: { newPoint.x++; newPoint.y++; break; }
+        case bottom:      {               newPoint.y++; break; }
+        case bottomLeft:  { newPoint.x--; newPoint.y++; break; }
+    }
+    return newPoint;
+}
+
 static bool isActivePoint(char room[][ROOM_DIMENSIONS], Point_t *point, Elements_t currentRay)
 {
     if (isWithinBounds(*point)) {
@@ -132,6 +148,7 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
     Point_t activePoint = { .x = 0, .y = 0 };
     if (point.type == ray45) {
         if (rayDirection == topRight) {
+            /* TODO: use rayDirection as an argument for coordianate calculating function */
             activePoint.x = point.x + 1;
             activePoint.y = point.y - 1;
             printf("TR: [%d][%d]\n", activePoint.x, activePoint.y);
@@ -262,6 +279,10 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
             if (activePoint.type == currentPoint.type) {
                 rayDone = true;
             }
+            break;
+        }
+        case prism: {
+            /* Definitely needs a new coordinate calculating function */
             break;
         }
     }
