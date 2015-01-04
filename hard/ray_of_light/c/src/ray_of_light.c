@@ -1,5 +1,6 @@
 #include <stdio.h>  // printf, sprintf
 #include <stdint.h> // uintX_t
+#include <unistd.h> // usleep
 
 #define ROOM_DIMENSIONS     (10)
 #define MAX_DISTANCE        (20)
@@ -50,6 +51,7 @@ static bool rayDone = false;   // Set if ray reaches a corner or enters the path
 static Direction_t rayDirection = down;
 
 static void clearArray(char array[][ROOM_DIMENSIONS]);
+static void clearLastScreen(uint8_t lines);
 static void printArray(char array[][ROOM_DIMENSIONS]);
 
 static Elements_t charToType(char c)
@@ -276,6 +278,12 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
             }
             break;
         }
+        default: {
+            if (activePoint.type == currentPoint.type) {
+                rayDone = true;
+            }
+            break;
+        }
     }
     return nextPoint;
 }
@@ -330,6 +338,8 @@ int32_t main(int32_t argc, const char *argv[])
     while (fgets(line, ROOM_DIMENSIONS + 1, file)) {
         if (lineCnt == ROOM_DIMENSIONS) {
             printArray(room);
+            //usleep(1E6);
+            //clearLastScreen(ROOM_DIMENSIONS + 3);
             /* Find first ray */
             Point_t entryPoint = getEntryPoint(room);
             /* Set initial direction of the ray */
@@ -345,6 +355,8 @@ int32_t main(int32_t argc, const char *argv[])
                 if (!rayDone) {
                     room[nextPoint.y][nextPoint.x] = typeToChar(nextPoint.type);
                     printArray(room);
+                    //usleep(1E5);
+                    //clearLastScreen(ROOM_DIMENSIONS);
                     currentPoint.x = nextPoint.x;
                     currentPoint.y = nextPoint.y;
                     currentPoint.type = nextPoint.type;
@@ -356,7 +368,6 @@ int32_t main(int32_t argc, const char *argv[])
             }
             clearArray(room);
             lineCnt = 0;
-            printf("\n---------------\n");
         } else {
             for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
                 room[i][lineCnt] = line[i];
@@ -364,6 +375,7 @@ int32_t main(int32_t argc, const char *argv[])
             lineCnt++;
         }
     }
+    //printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
     return 0;
 }
 
@@ -377,6 +389,15 @@ static void clearArray(char array[][ROOM_DIMENSIONS])
             array[i][j] = 0x00;
         }
     }
+}
+
+static void clearLastScreen(uint8_t lines)
+{
+    for (uint8_t i = 0; i < lines; ++i) {
+        printf("\033[8F\033");  // Erase the current line
+        printf("\b");
+    }
+    printf("\x1B[0E\n\n\n\n");  // Move to the beginning of the current line
 }
 
 static void printArray(char array[][ROOM_DIMENSIONS])
