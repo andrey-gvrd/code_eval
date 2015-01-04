@@ -4,7 +4,7 @@
 #include <ctype.h>  // isdigit
 
 #define ROOM_DIMENSIONS     (10)
-#define MAX_DISTANCE        (9)
+#define MAX_DISTANCE        (40)
 
 typedef enum {
     false = 0,
@@ -113,6 +113,20 @@ static bool isWithinBounds(Point_t point)
     return ((point.x < ROOM_DIMENSIONS) && (point.y < ROOM_DIMENSIONS));
 }
 
+static bool isActivePoint(char room[][ROOM_DIMENSIONS], Point_t *point, Elements_t currentRay)
+{
+    if (isWithinBounds(*point)) {
+        printf("Point is within bounds\n");
+        point->type = charToType(room[point->y][point->x]);
+        printf("Point's type: %s\n", ELEMENTS_STR[point->type]);
+        printf("Current ray: %s\n", ELEMENTS_STR[currentRay]);
+        if (point->type != currentRay) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
 {
     /* Find direction by looking at both potential point */
@@ -122,32 +136,46 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
     if (point.type == ray45) {
         Point_t topRightPoint = { .x = point.x + 1, 
                                   .y = point.y - 1 };
+        bool topRightPotential = false;
         Point_t bottomLeftPoint = { .x = point.x - 1, 
                                     .y = point.y + 1 };
+        bool bottomLeftPotential = false;
         printf("TR: [%d][%d]; BL: [%d][%d]\n", 
             topRightPoint.x, topRightPoint.y, bottomLeftPoint.x, bottomLeftPoint.y);
         /* Checking the top right point */
-        if (isWithinBounds(topRightPoint)) {
-            printf("Top right point is within bounds\n");
-            topRightPoint.type = charToType(room[topRightPoint.y][topRightPoint.x]);
-            printf("TR: %s\n", ELEMENTS_STR[topRightPoint.type]);
-            if (topRightPoint.type != ray45) {
-                printf("Top right point is an active point\n");
+        printf("Checking TR point\n");
+        if (isActivePoint(room, &topRightPoint, point.type)) {
+            printf("TR has potential\n");
+            topRightPotential = true;
+        }
+        /* Checking the bottom left point */
+        printf("Checking BL point\n");
+        if (isActivePoint(room, &bottomLeftPoint, point.type)) {
+            printf("BL has potential\n");
+            bottomLeftPotential = true;
+        }
+        /* If both point have potential to be selected, select that which has type space */
+        if (topRightPotential && bottomLeftPotential) {
+            if (topRightPoint.type == space) {
                 activePoint.x = topRightPoint.x;
                 activePoint.y = topRightPoint.y;
                 activePoint.type = topRightPoint.type;
-            }
-        }
-        /* Checking the bottom left point */
-        if (isWithinBounds(bottomLeftPoint)) {
-            printf("Bottom left point is within bounds\n");
-            bottomLeftPoint.type = charToType(room[bottomLeftPoint.y][bottomLeftPoint.x]);
-            printf("BL: %s\n", ELEMENTS_STR[bottomLeftPoint.type]);
-            if (bottomLeftPoint.type != ray45) {
-                printf("Bottom left point is an active point\n");
+            } else {
                 activePoint.x = bottomLeftPoint.x;
                 activePoint.y = bottomLeftPoint.y;
                 activePoint.type = bottomLeftPoint.type;
+            }
+        } else {
+            if (topRightPotential) {
+                activePoint.x = topRightPoint.x;
+                activePoint.y = topRightPoint.y;
+                activePoint.type = topRightPoint.type;
+            } else if (bottomLeftPotential) {
+                activePoint.x = bottomLeftPoint.x;
+                activePoint.y = bottomLeftPoint.y;
+                activePoint.type = bottomLeftPoint.type;
+            } else {
+                rayDone = true;
             }
         }
         printf("Active point: [%d][%d], %s\n", 
@@ -155,32 +183,46 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
     } else if (point.type == ray225) {
         Point_t topLeftPoint = { .x = point.x - 1, 
                                  .y = point.y - 1 };
+        bool topLeftPotential = false;
         Point_t bottomRightPoint = { .x = point.x + 1, 
                                      .y = point.y + 1 };
+        bool bottomRightPotential = false;
         printf("TL: [%d][%d]; BR: [%d][%d]\n", 
             topLeftPoint.x, topLeftPoint.y, bottomRightPoint.x, bottomRightPoint.y);
         /* Checking the top left point */
-        if (isWithinBounds(topLeftPoint)) {
-            printf("Top left point is within bounds\n");
-            topLeftPoint.type = charToType(room[topLeftPoint.y][topLeftPoint.x]);
-            printf("TL: %s\n", ELEMENTS_STR[topLeftPoint.type]);
-            if (topLeftPoint.type != ray45) {
-                printf("Top left point is an active point\n");
+        printf("Checking TL point\n");
+        if (isActivePoint(room, &topLeftPoint, point.type)) {
+            printf("TL has potential\n");
+            topLeftPotential = true;
+        }
+        /* Checking the bottom right point */
+        printf("Checking BR point\n");
+        if (isActivePoint(room, &bottomRightPoint, point.type)) {
+            printf("BR has potential\n");
+            bottomRightPotential = true;
+        }
+        /* If both point have potential to be selected, select that which has type space */
+        if (topLeftPotential && bottomRightPotential) {
+            if (topLeftPoint.type == space) {
+                activePoint.x = topLeftPoint.x;
+                activePoint.y = topLeftPoint.y;
+                activePoint.type = topLeftPoint.type;           
+            } else {
+                activePoint.x = bottomRightPoint.x;
+                activePoint.y = bottomRightPoint.y;
+                activePoint.type = bottomRightPoint.type;          
+            }
+        } else {
+            if (topLeftPotential) {
                 activePoint.x = topLeftPoint.x;
                 activePoint.y = topLeftPoint.y;
                 activePoint.type = topLeftPoint.type;
-            }
-        }
-        /* Checking the bottom right point */
-        if (isWithinBounds(bottomRightPoint)) {
-            printf("Bottom right point is within bounds\n");
-            bottomRightPoint.type = charToType(room[bottomRightPoint.y][bottomRightPoint.x]);
-            printf("BR: %s\n", ELEMENTS_STR[bottomRightPoint.type]);
-            if (bottomRightPoint.type != ray45) {
-                printf("Bottom right point is an active point\n");
+            } else if (bottomRightPotential) {
                 activePoint.x = bottomRightPoint.x;
                 activePoint.y = bottomRightPoint.y;
                 activePoint.type = bottomRightPoint.type;
+            } else {
+                rayDone = true;
             }
         }
         printf("Active point: [%d][%d], %s\n", 
