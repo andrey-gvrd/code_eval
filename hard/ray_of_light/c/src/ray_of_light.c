@@ -132,65 +132,41 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
     Point_t activePoint = { .x = 0, .y = 0 };
     if (point.type == ray45) {
         if (rayDirection == topRight) {
-            Point_t topRightPoint = { .x = point.x + 1, 
-                                      .y = point.y - 1 };
-            printf("TR: [%d][%d]\n", topRightPoint.x, topRightPoint.y);
+            activePoint.x = point.x + 1;
+            activePoint.y = point.y - 1;
+            printf("TR: [%d][%d]\n", activePoint.x, activePoint.y);
             printf("Checking TR point\n");
-            if (isActivePoint(room, &topRightPoint, point.type)) {
-                activePoint.x = topRightPoint.x;
-                activePoint.y = topRightPoint.y;
-                activePoint.type = topRightPoint.type;
-            } else {
-                rayDone = true;
-            }
         } else if (rayDirection == bottomLeft) {
-            Point_t bottomLeftPoint = { .x = point.x - 1, 
-                                        .y = point.y + 1 };
-            printf("BL: [%d][%d]\n", bottomLeftPoint.x, bottomLeftPoint.y);
+            activePoint.x = point.x - 1;
+            activePoint.y = point.y + 1;
+            printf("BL: [%d][%d]\n", activePoint.x, activePoint.y);
             printf("Checking BL point\n");
-            if (isActivePoint(room, &bottomLeftPoint, point.type)) {
-                activePoint.x = bottomLeftPoint.x;
-                activePoint.y = bottomLeftPoint.y;
-                activePoint.type = bottomLeftPoint.type;
-            } else {
-                rayDone = true;
-            }
         } else {
             printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
         }
-        printf("Active point: [%d][%d], %s\n", 
-            activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
+        if (!isActivePoint(room, &activePoint, point.type)) {
+            rayDone = true;
+        }
     } else if (point.type == ray225) {
         if (rayDirection == topLeft) {
-            Point_t topLeftPoint = { .x = point.x - 1, 
-                                     .y = point.y - 1 };
-            printf("TL: [%d][%d]\n", topLeftPoint.x, topLeftPoint.y);
+            activePoint.x = point.x - 1;
+            activePoint.y = point.y - 1;
+            printf("TL: [%d][%d]\n", activePoint.x, activePoint.y);
             printf("Checking TL point\n");
-            if (isActivePoint(room, &topLeftPoint, point.type)) {
-                activePoint.x = topLeftPoint.x;
-                activePoint.y = topLeftPoint.y;
-                activePoint.type = topLeftPoint.type;
-            } else {
-                rayDone = true;
-            }
         } else if (rayDirection == bottomRight) {
-            Point_t bottomRightPoint = { .x = point.x + 1, 
-                                         .y = point.y + 1 };
-            printf("BR: [%d][%d]\n", bottomRightPoint.x, bottomRightPoint.y);
+            activePoint.x = point.x + 1;
+            activePoint.y = point.y + 1;
+            printf("BR: [%d][%d]\n", activePoint.x, activePoint.y);
             printf("Checking BR point\n");
-            if (isActivePoint(room, &bottomRightPoint, point.type)) {
-                activePoint.x = bottomRightPoint.x;
-                activePoint.y = bottomRightPoint.y;
-                activePoint.type = bottomRightPoint.type;
-            } else {
-                rayDone = true;
-            }
         } else {
             printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
         }
-        printf("Active point: [%d][%d], %s\n", 
-            activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
+        if (!isActivePoint(room, &activePoint, point.type)) {
+            rayDone = true;
+        }
     }
+    printf("Active point: [%d][%d], %s\n", 
+        activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
     return activePoint;
 }
 
