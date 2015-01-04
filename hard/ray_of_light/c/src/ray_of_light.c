@@ -3,7 +3,7 @@
 #include <unistd.h> // usleep
 
 #define ROOM_DIMENSIONS     (10)
-#define MAX_DISTANCE        (20)
+#define MAX_DISTANCE        (40)
 
 typedef enum {
     false = 0,
@@ -276,6 +276,10 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
                 if      (currentPoint.type == ray45)  nextPoint.type = ray225;
                 else if (currentPoint.type == ray225) nextPoint.type = ray45;
             }
+            break;
+        }
+        case column: {
+            rayDone = true;
             break;
         }
         default: {
