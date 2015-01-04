@@ -32,6 +32,12 @@ typedef struct {
     uint8_t y;
 } Point_t;
 
+typedef struct {
+    uint8_t x;
+    uint8_t y;
+    Elements_t type;
+}
+
 static void clearArray(char array[][ROOM_DIMENSIONS]);
 static void printArray(char array[][ROOM_DIMENSIONS]);
 
@@ -79,9 +85,9 @@ static EntrySide_t getRayEntrySide(Point_t point)
     return entrySide;
 }
 
-static bool isWithinBounds(uint8_t i)
+static bool isWithinBounds(Point_t point)
 {
-    return (i < ROOM_DIMENSIONS);
+    return ((point.x < ROOM_DIMENSIONS) && (point.y < ROOM_DIMENSIONS));
 }
 
 static Point_t nextCoordinatesForEntry(Point_t point, Elements_t rayType,
@@ -136,7 +142,42 @@ static Point_t nextCoordinatesForEntry(Point_t point, Elements_t rayType,
 static Point_t nextCoordinates(char room[][ROOM_DIMENSIONS], 
                                Point_t point, Elements_t rayType)
 {
-
+    /* Find direction by looking at both potential point */
+    /* Active point is a point with which the ray can interact:
+       different ray, column, prism, wall */
+    Point_t activePoint = { .x = 0, .y = 0 };
+    if (rayType = ray45) {
+        Point_t topRightPoint = { .x = point.x + 1, .y = point.y - 1 };
+        Point_t bottomLeftPoint = { .x = point.x - 1, .y = point.y + 1 };
+        printf("TR: [%d][%d], BL: [%d][%d]\n", topRightPoint.x, topRightPoint.y,
+            bottomLeftPoint.x, bottomLeftPoint.y);
+        /* Checking the top right point */
+        if (isWithinBounds(topRightPoint)) {
+            printf("Top right point is within bounds\n");
+            Elements_t topRightElement = identify(room[topRightPoint.y][topRightPoint.x]);
+            if (topRightElement != ray45) {
+                printf("Top right point is an active point\n");
+                activePoint.x = topRightPoint.x;
+                activePoint.y = topRightPoint.y;
+            }
+        }
+        /* Checking the bottom left point */
+        if (isWithinBounds(bottomLeftPoint)) {
+            printf("Bottom left point is within bounds\n");
+            Elements_t bottomLeftElement = identify(room[bottomLeftPoint.y][bottomLeftPoint.x]);
+            if (bottomLeftElement != ray45) {
+                printf("Bottom left point is an active point\n");
+                activePoint.x = bottomLeftPoint.x;
+                activePoint.y = bottomLeftPoint.y;
+            }
+        }
+        Elements_t activePointType = identify(room[activePoint.y][activePoint.x]);
+        printf("Active point coordinates: [%d][%d], type: %d\n", 
+            activePoint.x, activePoint.y, activePointType);
+    } else if (rayType = ray225) {
+        /* */
+    }
+    return activePoint;
 }
 
 static char getNextCharacter(Elements_t elementType, Elements_t nextElementType)
