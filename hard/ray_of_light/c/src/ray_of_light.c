@@ -42,31 +42,26 @@ static void printArray(char array[][ROOM_DIMENSIONS]);
 
 static Elements_t identify(char c)
 {
-    Elements_t elementType = space;
-    printf("Identifying '%c'\n", c);
-    switch (c) {
-        case '#': {
-            elementType = wall;
-            break;
-        }
-        case 'o': {
-            elementType = column;
-            break;
-        }
-        case '*': {
-            elementType = prism;
-            break;
-        }
-        case '\\': {
-            elementType = ray225;
-            break;
-        }
-        case '/': {
-            elementType = ray45;
-            break;
-        }
-    }
+    Elements_t type = space;
+    if (c == '\\') type = ray225;
+    if (c == '/')  type = ray45;
+    if (c == ' ')  type = space;
+    if (c == 'o')  type = column;
+    if (c == '*')  type = prism;
+    if (c == '#')  type = wall;
     return elementType;
+}
+
+static char typeToChar(Elements_t type)
+{
+    char c = 'N';
+    if (type == ray225) c = '\\';
+    if (type == ray45)  c = '/';
+    if (type == space)  c = ' ';
+    if (type == column) c = 'o';
+    if (type == prism)  c = '*';
+    if (type == wall)   c = '#';
+    return c;
 }
 
 static EntrySide_t getRayEntrySide(Point_t point)
@@ -183,7 +178,7 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
     return activePoint;
 }
 
-static char getNextCharacter(Elements_t currentElement, Elements_t nextElement)
+static Point_t getNextCharacter(Elements_t currentElement, Elements_t nextElement)
 {
     char nextChar = 'N';
     printf("Current: %s, Next: %s\n", 
@@ -195,6 +190,14 @@ static char getNextCharacter(Elements_t currentElement, Elements_t nextElement)
             } else if ((currentElement == ray225)) {
                 nextChar = '\\';
             }
+            break;
+        }
+        case wall: {
+            if (currentElement == ray45) {
+                nextChar = '\\';
+            } else if ((currentElement == ray225)) {
+                nextChar = '/';
+            }           
             break;
         }
     }
@@ -238,12 +241,9 @@ int32_t main(int32_t argc, const char *argv[])
             Point_t currentPoint = { .x = entryPoint.x, .y = entryPoint.y,
                                      .type = entryPoint.type };
             while (travelledDistance < MAX_DISTANCE) {
-                Point_t nextPoint = getActivePoint(room, currentPoint);
-                printf("Pre-Current: %s, Pre-Next: %s\n", 
-                    ELEMENTS_STR[currentPoint.type], ELEMENTS_STR[nextPoint.type]);
-                char nextChar = getNextCharacter(currentPoint.type, nextPoint.type);
-                room[nextPoint.y][nextPoint.x] = nextChar;
-                nextPoint.type = identify(nextChar);
+                Point_t activePoint = getActivePoint(room, currentPoint);
+                Point_t nextPoint = getNextPoint(room, currentPoint, activePoint);
+                room[nextPoint.y][nextPoint.x] = typeToChar(nextPoint.type);
                 printArray(room);
                 currentPoint.x = nextPoint.x;
                 currentPoint.y = nextPoint.y;
@@ -251,10 +251,8 @@ int32_t main(int32_t argc, const char *argv[])
                 travelledDistance++;
             }
             clearArray(room);
-            printf("\n");
-            printf("---------------");
-            printf("\n");
             lineCnt = 0;
+            printf("\n---------------\n");
         } else {
             for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
                 room[i][lineCnt] = line[i];
