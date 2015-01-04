@@ -156,7 +156,7 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
                 rayDone = true;
             }
         } else {
-            printf("Wrong ray direction\n");
+            printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
         }
         printf("Active point: [%d][%d], %s\n", 
             activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
@@ -186,7 +186,7 @@ static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
                 rayDone = true;
             }
         } else {
-            printf("Wrong ray direction\n");
+            printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
         }
         printf("Active point: [%d][%d], %s\n", 
             activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
@@ -220,7 +220,7 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
                 if (wall.left) {
                     if (currentPoint.type == ray45) {
                         reflection = down;
-                        rayDirection = bottomLeft;
+                        rayDirection = bottomRight;
                     } else if (currentPoint.type == ray225) {
                         reflection = up;
                         rayDirection = topRight;
@@ -338,8 +338,6 @@ int32_t main(int32_t argc, const char *argv[])
     while (fgets(line, ROOM_DIMENSIONS + 1, file)) {
         if (lineCnt == ROOM_DIMENSIONS) {
             printArray(room);
-            //usleep(1E6);
-            //clearLastScreen(ROOM_DIMENSIONS + 3);
             /* Find first ray */
             Point_t entryPoint = getEntryPoint(room);
             /* Set initial direction of the ray */
@@ -355,8 +353,6 @@ int32_t main(int32_t argc, const char *argv[])
                 if (!rayDone) {
                     room[nextPoint.y][nextPoint.x] = typeToChar(nextPoint.type);
                     printArray(room);
-                    //usleep(1E5);
-                    //clearLastScreen(ROOM_DIMENSIONS);
                     currentPoint.x = nextPoint.x;
                     currentPoint.y = nextPoint.y;
                     currentPoint.type = nextPoint.type;
@@ -415,4 +411,8 @@ static void printArray(char array[][ROOM_DIMENSIONS])
         printf(" %d", i);   // Print right index
         printf("\n");
     }
+    /*
+    usleep(1E5);
+    clearLastScreen(ROOM_DIMENSIONS);
+    */
 }
