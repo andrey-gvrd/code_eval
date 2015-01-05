@@ -26,18 +26,18 @@ typedef struct {
     bool left;
     bool top;
     bool right;
-    bool bottom;
+    bool down;
     bool corner;
 } Wall_t;
 
 typedef enum {
     left = 0, up = 1, right = 2, down = 3, 
-    topLeft = 4, topRight = 5, bottomRight = 6, bottomLeft = 7
+    upLeft = 4, upRight = 5, downRight = 6, downLeft = 7
 } Direction_t;
 
 static const char *DIRECTION_STR[] = {
     "left", "up", "right", "down", 
-    "top left", "top right", "bottom right", "bottom left"
+    "top left", "top right", "down right", "down left"
 };
 
 typedef struct {
@@ -80,7 +80,7 @@ static char typeToChar(Elements_t type)
 
 static Wall_t getWallSide(Point_t point)
 {
-    Wall_t wall = { .left = false, .top = false, .right = false, .bottom = false,
+    Wall_t wall = { .left = false, .top = false, .right = false, .down = false,
                     .corner = false };
     bool potentialCorner = false;
     if (point.x == 0) {
@@ -99,7 +99,7 @@ static Wall_t getWallSide(Point_t point)
         else potentialCorner = true;
     }
     if (point.y == ROOM_DIMENSIONS - 1) {
-        wall.bottom = true;
+        wall.down = true;
         if (potentialCorner) wall.corner = true;
         else potentialCorner = true;
     }
@@ -115,14 +115,14 @@ static Point_t getNeighbour(Point_t point, Direction_t direction)
 {
     Point_t newPoint = { .x = point.x, .y = point.y };
     switch (direction) {
-        case left:        { newPoint.x--;               break; }
-        case topLeft:     { newPoint.x--; newPoint.y--; break; }
-        case top:         {               newPoint.y--; break; }
-        case topRight:    { newPoint.x++; newPoint.y--; break; }
-        case right:       { newPoint.x++;               break; }
-        case bottomRight: { newPoint.x++; newPoint.y++; break; }
-        case bottom:      {               newPoint.y++; break; }
-        case bottomLeft:  { newPoint.x--; newPoint.y++; break; }
+        case left:      { newPoint.x--;               break; }
+        case upLeft:    { newPoint.x--; newPoint.y--; break; }
+        case up:        {               newPoint.y--; break; }
+        case upRight:   { newPoint.x++; newPoint.y--; break; }
+        case right:     { newPoint.x++;               break; }
+        case downRight: { newPoint.x++; newPoint.y++; break; }
+        case down:      {               newPoint.y++; break; }
+        case downLeft:  { newPoint.x--; newPoint.y++; break; }
     }
     return newPoint;
 }
@@ -142,45 +142,25 @@ static bool isActivePoint(char room[][ROOM_DIMENSIONS], Point_t *point, Elements
 
 static Point_t getActivePoint(char room[][ROOM_DIMENSIONS], Point_t point)
 {
-    /* Find direction by looking at both potential point */
     /* Active point is a point with which the ray can interact:
        different ray, column, prism, wall */
     Point_t activePoint = { .x = 0, .y = 0 };
     if (point.type == ray45) {
-        if (rayDirection == topRight) {
-            /* TODO: use rayDirection as an argument for coordianate calculating function */
-            activePoint.x = point.x + 1;
-            activePoint.y = point.y - 1;
-            printf("TR: [%d][%d]\n", activePoint.x, activePoint.y);
-            printf("Checking TR point\n");
-        } else if (rayDirection == bottomLeft) {
-            activePoint.x = point.x - 1;
-            activePoint.y = point.y + 1;
-            printf("BL: [%d][%d]\n", activePoint.x, activePoint.y);
-            printf("Checking BL point\n");
+        if ((rayDirection == upRight) || (rayDirection == downLeft)) {
+            activePoint = getNeighbour(point, rayDirection);
         } else {
             printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
-        }
-        if (!isActivePoint(room, &activePoint, point.type)) {
-            rayDone = true;
         }
     } else if (point.type == ray225) {
-        if (rayDirection == topLeft) {
-            activePoint.x = point.x - 1;
-            activePoint.y = point.y - 1;
-            printf("TL: [%d][%d]\n", activePoint.x, activePoint.y);
-            printf("Checking TL point\n");
-        } else if (rayDirection == bottomRight) {
-            activePoint.x = point.x + 1;
-            activePoint.y = point.y + 1;
-            printf("BR: [%d][%d]\n", activePoint.x, activePoint.y);
-            printf("Checking BR point\n");
+        if ((rayDirection == upLeft) || (rayDirection == downRight)) {
+            activePoint = getNeighbour(point, rayDirection);
         } else {
             printf("Wrong ray direction: %s\n", DIRECTION_STR[rayDirection]);
         }
-        if (!isActivePoint(room, &activePoint, point.type)) {
-            rayDone = true;
-        }
+    }
+    if (!isActivePoint(room, &activePoint, point.type)) {
+        rayDone = true;
+        printf("Ray's done\n");
     }
     printf("Active point: [%d][%d], %s\n", 
         activePoint.x, activePoint.y, ELEMENTS_STR[activePoint.type]);
@@ -213,59 +193,38 @@ static Point_t getNextPoint(char room[][ROOM_DIMENSIONS],
                 if (wall.left) {
                     if (currentPoint.type == ray45) {
                         reflection = down;
-                        rayDirection = bottomRight;
+                        rayDirection = downRight;
                     } else if (currentPoint.type == ray225) {
                         reflection = up;
-                        rayDirection = topRight;
+                        rayDirection = upRight;
                     }
                 } else if (wall.top) {
                     if (currentPoint.type == ray45) {
                         reflection = right;
-                        rayDirection = bottomRight;
+                        rayDirection = downRight;
                     } else if (currentPoint.type == ray225) {
                         reflection = left;
-                        rayDirection = bottomLeft;
+                        rayDirection = downLeft;
                     }
                 } else if (wall.right) {
                     if (currentPoint.type == ray45) {
                         reflection = up;
-                        rayDirection = topLeft;
+                        rayDirection = upLeft;
                     } else if (currentPoint.type == ray225) {
                         reflection = down;
-                        rayDirection = bottomLeft;
+                        rayDirection = downLeft;
                     }
-                } else if (wall.bottom) {
+                } else if (wall.down) {
                     if (currentPoint.type == ray45) {
                         reflection = left;
-                        rayDirection = topLeft;
+                        rayDirection = upLeft;
                     } else if (currentPoint.type == ray225) {
                         reflection = right;
-                        rayDirection = topRight;
+                        rayDirection = upRight;
                     }
                 }
                 /* Calculate next point's coordinates */
-                switch (reflection) {
-                    case left: {
-                        nextPoint.x = currentPoint.x - 1;
-                        nextPoint.y = currentPoint.y;
-                        break;
-                    }
-                    case up: {
-                        nextPoint.x = currentPoint.x;
-                        nextPoint.y = currentPoint.y - 1;
-                        break;
-                    }
-                    case right: {
-                        nextPoint.x = currentPoint.x + 1;
-                        nextPoint.y = currentPoint.y;
-                        break;
-                    }
-                    case down: {
-                        nextPoint.x = currentPoint.x;
-                        nextPoint.y = currentPoint.y + 1;
-                        break;
-                    }
-                }
+                nextPoint = getNeighbour(currentPoint, reflection);
                 if      (currentPoint.type == ray45)  nextPoint.type = ray225;
                 else if (currentPoint.type == ray225) nextPoint.type = ray45;
             }
@@ -315,15 +274,15 @@ static Direction_t getEntryDirection(Point_t entryPoint)
     Wall_t wall = getWallSide(entryPoint);
     if (entryPoint.type == ray45) {
         if (wall.right || wall.top) {
-            _rayDirection = bottomLeft;
+            _rayDirection = downLeft;
         } else {
-            _rayDirection = topRight;
+            _rayDirection = upRight;
         }
     } else if (entryPoint.type == ray225) {
         if (wall.left || wall.top) {
-            _rayDirection = bottomRight;
+            _rayDirection = downRight;
         } else {
-            _rayDirection = topLeft;
+            _rayDirection = upLeft;
         }
     }
     return _rayDirection;
