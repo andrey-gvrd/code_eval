@@ -151,7 +151,7 @@ static bool isActivePoint(char room[][ROOM_DIMENSIONS],
 {
     if (isWithinBounds(*point)) {
         PRINT("Potential point [%d][%d] is within bounds\n", point->x, point->y);
-        point->type = charToType(room[point->y][point->x]);
+        point->type = charToType(room[point->x][point->y]);
         PRINT("Potential point's type: %s\n", ELEMENTS_STR[point->type]);
         if (point->type != currentRay) {
             return true;
@@ -258,8 +258,8 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                 if      (ray->currentPoint.type == ray45)  ray->nextPoint.type = ray225;
                 else if (ray->currentPoint.type == ray225) ray->nextPoint.type = ray45;
                 /* Handling crossing different rays after reflection */
-                Elements_t reflectionSpaceType = charToType(room[ray->nextPoint.y]
-                                                                [ray->nextPoint.x]);
+                Elements_t reflectionSpaceType = charToType(room[ray->nextPoint.x]
+                                                                [ray->nextPoint.y]);
                 if ((ray->nextPoint.type != reflectionSpaceType) && 
                     ((reflectionSpaceType == ray45) || (reflectionSpaceType == ray225))) {
                     PRINT("Crossing a different ray type after reflection\n");
@@ -294,7 +294,8 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                         /* Setting up the next point */
                         ray[rayCnt - 1].nextPoint = getNeighbour(prismPoint, dir);
                         PRINT("New ray's coordinates [%d][%d]\n", 
-                            ray[rayCnt - 1].nextPoint.x, ray[rayCnt - 1].nextPoint.y);
+                            ray[rayCnt - 1].nextPoint.x, 
+                            ray[rayCnt - 1].nextPoint.y);
                         ray[rayCnt - 1].direction = dir;
                         PRINT("New ray's direction: %s\n", 
                             DIRECTION_STR[ray[rayCnt - 1].direction]);
@@ -314,6 +315,8 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                         ray[rayCnt - 1].finished = false;
                         ray[rayCnt - 1].travelledDistance = 0;
                         ray[rayCnt - 1].justReflected = 0;
+                    } else {
+                        PRINT("This is where the ray came from\n")
                     }
                 }
             }
@@ -367,15 +370,15 @@ static uint8_t getEntryRays(char room[][ROOM_DIMENSIONS], Ray_t *rays)
     Point_t tmpPoint;
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
-            tmpPoint.x = j;
-            tmpPoint.y = i;
+            tmpPoint.x = i;
+            tmpPoint.y = j;
             if (isWall(tmpPoint)) {
                 tmpPoint.type = charToType(room[i][j]);
                 if ((tmpPoint.type == ray45) ||
                     (tmpPoint.type == ray225)) {
                     /* Initialise a new ray object */
-                    rays[rayCnt].currentPoint.x = j;
-                    rays[rayCnt].currentPoint.y = i;
+                    rays[rayCnt].currentPoint.x = i;
+                    rays[rayCnt].currentPoint.y = j;
                     rays[rayCnt].currentPoint.type = tmpPoint.type;
                     rays[rayCnt].direction = getEntryDirection(rays[rayCnt].currentPoint);
                     rays[rayCnt].finished = false;
@@ -434,7 +437,7 @@ int32_t main(int32_t argc, const char *argv[])
                         getNextPoint(room, &rays[i]);
                         /* Second check because it might have finished while inside */
                         if (!rays[i].finished) {
-                            room[rays[i].nextPoint.y][rays[i].nextPoint.x] =
+                            room[rays[i].nextPoint.x][rays[i].nextPoint.y] =
                             typeToChar(rays[i].nextPoint.type);
                             rays[i].currentPoint.x = rays[i].nextPoint.x;
                             rays[i].currentPoint.y = rays[i].nextPoint.y;
