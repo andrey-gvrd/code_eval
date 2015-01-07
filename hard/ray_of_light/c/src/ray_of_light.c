@@ -1,10 +1,18 @@
-#include <stdio.h>  // printf, sprintf
+#include <stdio.h>  // PRINT, sPRINT
 #include <stdint.h> // uintX_t
 #include <unistd.h> // usleep
 
 #define ROOM_DIMENSIONS     (10)
 #define MAX_DISTANCE        (40)
 #define MAX_RAYS            (10)
+
+#define DEBUG_OUTPUT
+
+#ifdef DEBUG_OUTPUT
+ #define PRINT(...) printf(__VA_ARGS__);
+#else
+ #define PRINT(...) (void)0
+#endif
 
 typedef enum {
     false = 0,
@@ -142,9 +150,9 @@ static bool isActivePoint(char room[][ROOM_DIMENSIONS],
                           Point_t *point, Elements_t currentRay)
 {
     if (isWithinBounds(*point)) {
-        //printf("Potential point [%d][%d] is within bounds\n", point->x, point->y);
+        PRINT("Potential point [%d][%d] is within bounds\n", point->x, point->y);
         point->type = charToType(room[point->y][point->x]);
-        //printf("Potential point's type: %s\n", ELEMENTS_STR[point->type]);
+        PRINT("Potential point's type: %s\n", ELEMENTS_STR[point->type]);
         if (point->type != currentRay) {
             return true;
         }
@@ -156,33 +164,29 @@ static void getActivePoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
 {
     /* Active point is a point with which the ray can interact:
        different ray, column, prism, wall */
-    /*
-    printf("Working with a ray of type %s at [%d][%d]\n", 
+    PRINT("Working with a ray of type %s at [%d][%d]\n", 
         ELEMENTS_STR[ray->currentPoint.type], 
         ray->currentPoint.x, ray->currentPoint.y);
-        */
     if (ray->currentPoint.type == ray45) {
         if ((ray->direction == upRight) || (ray->direction == downLeft)) {
             ray->activePoint = getNeighbour(ray->currentPoint, ray->direction);
         } else {
-            //printf("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
+            PRINT("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
         }
     } else if (ray->currentPoint.type == ray225) {
         if ((ray->direction == upLeft) || (ray->direction == downRight)) {
             ray->activePoint = getNeighbour(ray->currentPoint, ray->direction);
         } else {
-            //printf("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
+            PRINT("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
         }
     }
     if (!isActivePoint(room, &(ray->activePoint), ray->currentPoint.type)) {
         ray->finished = true;
-        //printf("Ray's done because inactive point has been reached\n");
+        PRINT("Ray's done because inactive point has been reached\n");
     }
-    /*
-    printf("Active point: [%d][%d], %s\n", 
+    PRINT("Active point: [%d][%d], %s\n", 
         ray->activePoint.x, ray->activePoint.y, 
         ELEMENTS_STR[ray->activePoint.type]);
-        */
 }
 
 static Direction_t oppositeDirection(Direction_t inDir)
@@ -195,10 +199,8 @@ static Direction_t oppositeDirection(Direction_t inDir)
 
 static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
 {
-    /*
-    printf("Current: %s, Active: %s\n", 
+    PRINT("Current: %s, Active: %s\n", 
         ELEMENTS_STR[ray->currentPoint.type], ELEMENTS_STR[ray->activePoint.type]);
-        */
     ray->justReflected = false;
     switch(ray->activePoint.type) {
         case space: {
@@ -214,7 +216,7 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
             ray->justReflected = true;
             Wall_t wall = getWallSide(ray->activePoint);
             if (wall.corner) {
-                //printf("Corner reached\n");
+                PRINT("Corner reached\n");
                 ray->finished = true;
             } else {
                 /* Figure out reflection direction */
@@ -260,14 +262,14 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                                                                 [ray->nextPoint.x]);
                 if ((ray->nextPoint.type != reflectionSpaceType) && 
                     ((reflectionSpaceType == ray45) || (reflectionSpaceType == ray225))) {
-                    //printf("Crossing a different ray type after reflection\n");
+                    PRINT("Crossing a different ray type after reflection\n");
                     ray->nextPoint.type = cross;
                 }
             }
             break;
         }
         case column: {
-            //printf("Column reached\n");
+            PRINT("Column reached\n");
             ray->finished = true;
             break;
         }
@@ -279,41 +281,31 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
             /* Hacky way to iterate through direction enums */
             ray->finished = true;   // Ray entering a prism is finished
             Point_t prismPoint = ray->activePoint;
-            /*
-            printf("Prism encountered at [%d][%d]\n", 
+            PRINT("Prism encountered at [%d][%d]\n", 
                 prismPoint.x, prismPoint.y);
-                */
             for (uint8_t dir = 0; dir <= 7; ++dir) {
                 if (dir % 2 != 0) {
-                    //printf("Checking direction: %s\n", DIRECTION_STR[dir]);
+                    PRINT("Checking direction: %s\n", DIRECTION_STR[dir]);
                     if (oppositeDirection(ray->direction) != dir) {
                         rayCnt++;
-                        /*
-                        printf("Creating new ray #%d at %s from prism location\n", 
+                        PRINT("Creating new ray #%d at %s from prism location\n", 
                             rayCnt - 1, DIRECTION_STR[dir]);
-                            */
                         /* Spawn a new ray */
                         /* Setting up the next point */
                         ray[rayCnt - 1].nextPoint = getNeighbour(prismPoint, dir);
-                        /*
-                        printf("New ray's coordinates [%d][%d]\n", 
+                        PRINT("New ray's coordinates [%d][%d]\n", 
                             ray[rayCnt - 1].nextPoint.x, ray[rayCnt - 1].nextPoint.y);
-                            */
                         ray[rayCnt - 1].direction = dir;
-                        /*
-                        printf("New ray's direction: %s\n", 
+                        PRINT("New ray's direction: %s\n", 
                             DIRECTION_STR[ray[rayCnt - 1].direction]);
-                            */
                         if ((ray[rayCnt - 1].direction == upRight) || 
                             (ray[rayCnt - 1].direction == downLeft)) {
                             ray[rayCnt - 1].nextPoint.type = ray45;
                         } else {
                             ray[rayCnt - 1].nextPoint.type = ray225;
                         }
-                        /*
-                        printf("New ray's type: %s\n", 
+                        PRINT("New ray's type: %s\n", 
                             ELEMENTS_STR[ray[rayCnt - 1].nextPoint.type]);
-                            */
                         /* Setting up the current point */
                         ray[rayCnt - 1].currentPoint.x = prismPoint.x;
                         ray[rayCnt - 1].currentPoint.y = prismPoint.y;
@@ -322,10 +314,7 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                         ray[rayCnt - 1].finished = false;
                         ray[rayCnt - 1].travelledDistance = 0;
                         ray[rayCnt - 1].justReflected = 0;
-
                     }
-                } else {
-                    //printf("%s is not a corner direction\n", DIRECTION_STR[dir]);
                 }
             }
             break;
@@ -333,10 +322,10 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
         /* Handling meeting with other rays */
         default: {
             if (ray->activePoint.type == ray->currentPoint.type) {
-                //printf("Ray of the same type reached\n");
+                PRINT("Ray of the same type reached\n");
                 ray->finished = true;
             } else {
-                //printf("Ray of a different type encountered\n");
+                PRINT("Ray of a different type encountered\n");
                 ray->nextPoint.x = ray->activePoint.x;
                 ray->nextPoint.y = ray->activePoint.y;
                 ray->nextPoint.type = cross;
@@ -391,17 +380,15 @@ static uint8_t getEntryRays(char room[][ROOM_DIMENSIONS], Ray_t *rays)
                     rays[rayCnt].direction = getEntryDirection(rays[rayCnt].currentPoint);
                     rays[rayCnt].finished = false;
                     rays[rayCnt].travelledDistance = 0;
-                    /*
-                    printf("Ray #%d with type %s entered at: [%d][%d]\n", 
+                    PRINT("Ray #%d with type %s entered at: [%d][%d]\n", 
                         rayCnt, ELEMENTS_STR[rays[rayCnt].currentPoint.type], 
                         rays[rayCnt].currentPoint.x, rays[rayCnt].currentPoint.y);
-                        */
                     rayCnt++;
                 }
             }
         }
     }
-    //printf("Total of %d rays found.\n", rayCnt);
+    PRINT("Total of %d rays found.\n", rayCnt);
     return rayCnt;
 }
 
@@ -436,15 +423,13 @@ int32_t main(int32_t argc, const char *argv[])
             while (!allDone) {
                 for (uint i = 0; i < rayCnt; ++i) {
                     if (rays[i].travelledDistance >= MAX_DISTANCE) {
-                        /*
-                        printf("Ray #%d travelled for more than %d points and is done\n",
+                        PRINT("Ray #%d travelled for more than %d points and is done\n",
                             i, MAX_DISTANCE);
-                            */
                         rays[i].finished = true;
                     }
                     /* Ray may be finished for variety of reasons */
                     if (!rays[i].finished) {
-                        //printf("Working with ray #%d\n", i);
+                        PRINT("Working with ray #%d\n", i);
                         getActivePoint(room, &rays[i]);
                         getNextPoint(room, &rays[i]);
                         /* Second check because it might have finished while inside */
@@ -468,17 +453,17 @@ int32_t main(int32_t argc, const char *argv[])
                             }
                             rays[i].travelledDistance++;
                         } else {
-                            //printf("Finished ray #%d found\n", i);
+                            PRINT("Finished ray #%d found\n", i);
                             allDone = areAllRaysDone(rays, rayCnt);
                         }
                     } else {
-                        //printf("Finished ray #%d found\n", i);
+                        PRINT("Finished ray #%d found\n", i);
                         allDone = areAllRaysDone(rays, rayCnt);
                     }
                     printArray(room);
                 }
             }
-            //printf("All rays are done\n");
+            PRINT("All rays are done\n");
             clearArray(room);
             allDone = false;
             lineCnt = 0;
@@ -489,7 +474,7 @@ int32_t main(int32_t argc, const char *argv[])
             lineCnt++;
         }
     }
-    printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    //PRINT("\n\n\n\n\n\n\n\n\n\n\n\n\n");
     return 0;
 }
 
@@ -508,10 +493,10 @@ static void clearArray(char array[][ROOM_DIMENSIONS])
 static void clearLastScreen(uint8_t lines)
 {
     for (uint8_t i = 0; i < lines; ++i) {
-        printf("\033[8F\033");  // Erase the current line
-        printf("\b");
+        PRINT("\033[8F\033");  // Erase the current line
+        PRINT("\b");
     }
-    printf("\x1B[0E\n");  // Move to the beginning of the current line
+    PRINT("\x1B[0E\n");  // Move to the beginning of the current line
 }
 
 static void printArray(char array[][ROOM_DIMENSIONS])
@@ -519,18 +504,18 @@ static void printArray(char array[][ROOM_DIMENSIONS])
     printf("\n");
     /* Print top index */
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
-        printf("%d", i);
+        PRINT("%d", i);
     }
-    printf("\n\n");
+    PRINT("\n\n");
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
             printf("%c", array[j][i]);
         }
-        printf(" %d", i);   // Print right index
+        PRINT(" %d", i);   // Print right index
         printf("\n");
     }
-    
+    /*
     usleep(1.3E5);
     clearLastScreen(ROOM_DIMENSIONS);
-    
+    */
 }
