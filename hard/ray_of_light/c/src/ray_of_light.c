@@ -1,11 +1,9 @@
-#include <stdio.h>  // PRINT, sPRINT
-#include <stdint.h> // uintX_t
-#include <unistd.h> // usleep
+#include <stdio.h>  // printf
+//#include <unistd.h> // usleep
 
 #define ROOM_DIMENSIONS     (10)
 #define MAX_DISTANCE        (40)
-#define MAX_RAYS            (10)
-
+#define MAX_RAYS            (23)
 #define DEBUG_OUTPUT
 
 #ifdef DEBUG_OUTPUT
@@ -70,6 +68,7 @@ typedef struct {
 static void clearArray(char array[][ROOM_DIMENSIONS]);
 static void clearLastScreen(uint8_t lines);
 static void printArray(char array[][ROOM_DIMENSIONS]);
+static void printRays(Ray_t *ray, uint8_t rayCnt);
 
 static Elements_t charToType(char c)
 {
@@ -104,8 +103,7 @@ static Wall_t getWallSide(Point_t point)
     bool potentialCorner = false;
     if (point.x == 0) {
         wall.left = true;
-        if (potentialCorner) wall.corner = true;
-        else potentialCorner = true;
+        potentialCorner = true;
     }
     if (point.x == ROOM_DIMENSIONS - 1) {
         wall.right = true;
@@ -120,14 +118,13 @@ static Wall_t getWallSide(Point_t point)
     if (point.y == ROOM_DIMENSIONS - 1) {
         wall.down = true;
         if (potentialCorner) wall.corner = true;
-        else potentialCorner = true;
     }
     return wall;
 }
 
 static bool isWithinBounds(Point_t point)
 {
-    return ((point.x < ROOM_DIMENSIONS) && (point.y < ROOM_DIMENSIONS));
+    return (bool)((point.x < ROOM_DIMENSIONS) && (point.y < ROOM_DIMENSIONS));
 }
 
 static Point_t getNeighbour(Point_t point, Direction_t direction)
@@ -170,12 +167,14 @@ static void getActivePoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
     if (ray->currentPoint.type == ray45) {
         if ((ray->direction == upRight) || (ray->direction == downLeft)) {
             ray->activePoint = getNeighbour(ray->currentPoint, ray->direction);
+            PRINT("Selected active point\n");
         } else {
             PRINT("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
         }
     } else if (ray->currentPoint.type == ray225) {
         if ((ray->direction == upLeft) || (ray->direction == downRight)) {
             ray->activePoint = getNeighbour(ray->currentPoint, ray->direction);
+            PRINT("Selected active point\n");
         } else {
             PRINT("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
         }
@@ -278,43 +277,53 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                start a new ray there with the same direction as the point is in relation
                to the prism, i.e. downRight point of the prism has downRight outgoing 
                direction. */
-            /* Hacky way to iterate through direction enums */
+            uint8_t rayIndex = 0;
+            PRINT("Ray is finished because it entered into a prism\n");
             ray->finished = true;   // Ray entering a prism is finished
             Point_t prismPoint = ray->activePoint;
             PRINT("Prism encountered at [%d][%d]\n", 
                 prismPoint.x, prismPoint.y);
+            /* Hacky way to iterate through direction enums */
             for (uint8_t dir = 0; dir <= 7; ++dir) {
                 if (dir % 2 != 0) {
                     PRINT("Checking direction: %s\n", DIRECTION_STR[dir]);
                     if (oppositeDirection(ray->direction) != dir) {
-                        rayCnt++;
-                        PRINT("Creating new ray #%d at %s from prism location\n", 
-                            rayCnt - 1, DIRECTION_STR[dir]);
-                        /* Spawn a new ray */
-                        /* Setting up the next point */
-                        ray[rayCnt - 1].nextPoint = getNeighbour(prismPoint, dir);
-                        PRINT("New ray's coordinates [%d][%d]\n", 
-                            ray[rayCnt - 1].nextPoint.x, 
-                            ray[rayCnt - 1].nextPoint.y);
-                        ray[rayCnt - 1].direction = dir;
-                        PRINT("New ray's direction: %s\n", 
-                            DIRECTION_STR[ray[rayCnt - 1].direction]);
-                        if ((ray[rayCnt - 1].direction == upRight) || 
-                            (ray[rayCnt - 1].direction == downLeft)) {
-                            ray[rayCnt - 1].nextPoint.type = ray45;
+                        if (rayCnt < MAX_RAYS) {
+                            rayIndex++;
+                            PRINT("Creating new ray #%d at %s from prism location\n", 
+                                rayIndex, DIRECTION_STR[dir]);
+                            /* Spawn a new ray */
+                            /* Setting up the next point */
+                            ray[rayIndex].nextPoint = getNeighbour(prismPoint, (Direction_t)dir);
+                            PRINT("New ray's next coordinates: [%d][%d]\n", 
+                                ray[rayIndex].nextPoint.x, 
+                                ray[rayIndex].nextPoint.y);
+                            ray[rayIndex].direction = (Direction_t)dir;
+                            PRINT("New ray's direction: %s\n", 
+                                DIRECTION_STR[ray[rayIndex].direction]);
+                            if ((ray[rayIndex].direction == upRight) || 
+                                (ray[rayIndex].direction == downLeft)) {
+                                ray[rayIndex].nextPoint.type = ray45;
+                            } else {
+                                ray[rayIndex].nextPoint.type = ray225;
+                            }
+                            PRINT("New ray's type: %s\n", 
+                                ELEMENTS_STR[ray[rayIndex].nextPoint.type]);
+                            /* Setting up the current point */
+                            ray[rayIndex].currentPoint.x = prismPoint.x;
+                            ray[rayIndex].currentPoint.y = prismPoint.y;
+                            PRINT("New ray's current coordinates: [%d][%d]\n",
+                                ray[rayIndex].currentPoint.x, 
+                                ray[rayIndex].currentPoint.y);
+                            ray[rayIndex].currentPoint.type = ray[rayIndex].nextPoint.type;
+                            /* Setting up ray's parameters */
+                            ray[rayIndex].finished = false;
+                            ray[rayIndex].travelledDistance = 0;
+                            ray[rayIndex].justReflected = false;
+                            rayCnt++;
                         } else {
-                            ray[rayCnt - 1].nextPoint.type = ray225;
+                            printf("MAX AMOUNT OF RAYS HAS BEEN REACHED\n");
                         }
-                        PRINT("New ray's type: %s\n", 
-                            ELEMENTS_STR[ray[rayCnt - 1].nextPoint.type]);
-                        /* Setting up the current point */
-                        ray[rayCnt - 1].currentPoint.x = prismPoint.x;
-                        ray[rayCnt - 1].currentPoint.y = prismPoint.y;
-                        ray[rayCnt - 1].currentPoint.type = ray[rayCnt - 1].nextPoint.type;
-                        /* Setting up ray's parameters */
-                        ray[rayCnt - 1].finished = false;
-                        ray[rayCnt - 1].travelledDistance = 0;
-                        ray[rayCnt - 1].justReflected = 0;
                     } else {
                         PRINT("This is where the ray came from\n")
                     }
@@ -340,33 +349,33 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
 
 static Direction_t getEntryDirection(Point_t entryPoint)
 {
-    Direction_t _rayDirection = down;
+    Direction_t rayDirection = down;
     Wall_t wall = getWallSide(entryPoint);
     if (entryPoint.type == ray45) {
         if (wall.right || wall.top) {
-            _rayDirection = downLeft;
+            rayDirection = downLeft;
         } else {
-            _rayDirection = upRight;
+            rayDirection = upRight;
         }
     } else if (entryPoint.type == ray225) {
         if (wall.left || wall.top) {
-            _rayDirection = downRight;
+            rayDirection = downRight;
         } else {
-            _rayDirection = upLeft;
+            rayDirection = upLeft;
         }
     }
-    return _rayDirection;
+    return rayDirection;
 }
 
 static bool isWall(Point_t point)
 {
-    return ((point.x == ROOM_DIMENSIONS - 1) || (point.x == 0) ||
-            (point.y == ROOM_DIMENSIONS - 1) || (point.y == 0));
+    return (bool)((point.x == ROOM_DIMENSIONS - 1) || (point.x == 0) ||
+                  (point.y == ROOM_DIMENSIONS - 1) || (point.y == 0));
 }
 
 static uint8_t getEntryRays(char room[][ROOM_DIMENSIONS], Ray_t *rays)
 {
-    uint8_t rayCnt;
+    uint8_t _rayCnt = 0;
     Point_t tmpPoint;
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
@@ -377,22 +386,22 @@ static uint8_t getEntryRays(char room[][ROOM_DIMENSIONS], Ray_t *rays)
                 if ((tmpPoint.type == ray45) ||
                     (tmpPoint.type == ray225)) {
                     /* Initialise a new ray object */
-                    rays[rayCnt].currentPoint.x = i;
-                    rays[rayCnt].currentPoint.y = j;
-                    rays[rayCnt].currentPoint.type = tmpPoint.type;
-                    rays[rayCnt].direction = getEntryDirection(rays[rayCnt].currentPoint);
-                    rays[rayCnt].finished = false;
-                    rays[rayCnt].travelledDistance = 0;
+                    rays[_rayCnt].currentPoint.x = i;
+                    rays[_rayCnt].currentPoint.y = j;
+                    rays[_rayCnt].currentPoint.type = tmpPoint.type;
+                    rays[_rayCnt].direction = getEntryDirection(rays[_rayCnt].currentPoint);
+                    rays[_rayCnt].finished = false;
+                    rays[_rayCnt].travelledDistance = 0;
                     PRINT("Ray #%d with type %s entered at: [%d][%d]\n", 
-                        rayCnt, ELEMENTS_STR[rays[rayCnt].currentPoint.type], 
-                        rays[rayCnt].currentPoint.x, rays[rayCnt].currentPoint.y);
-                    rayCnt++;
+                        _rayCnt, ELEMENTS_STR[rays[_rayCnt].currentPoint.type], 
+                        rays[_rayCnt].currentPoint.x, rays[_rayCnt].currentPoint.y);
+                    _rayCnt++;
                 }
             }
         }
     }
-    PRINT("Total of %d rays found.\n", rayCnt);
-    return rayCnt;
+    PRINT("Total of %d rays found.\n", _rayCnt);
+    return _rayCnt;
 }
 
 static bool areAllRaysDone(Ray_t *rays, uint8_t rayCnt)
@@ -424,7 +433,7 @@ int32_t main(int32_t argc, const char *argv[])
             rayCnt = getEntryRays(room, rays);
             bool allDone = false;  // true if all rays are done
             while (!allDone) {
-                for (uint i = 0; i < rayCnt; ++i) {
+                for (uint i = 0; i < rayCnt; i++) {
                     if (rays[i].travelledDistance >= MAX_DISTANCE) {
                         PRINT("Ray #%d travelled for more than %d points and is done\n",
                             i, MAX_DISTANCE);
@@ -433,8 +442,10 @@ int32_t main(int32_t argc, const char *argv[])
                     /* Ray may be finished for variety of reasons */
                     if (!rays[i].finished) {
                         PRINT("Working with ray #%d\n", i);
+                        //printRays(rays, rayCnt);
                         getActivePoint(room, &rays[i]);
                         getNextPoint(room, &rays[i]);
+                        //printRays(rays, rayCnt);
                         /* Second check because it might have finished while inside */
                         if (!rays[i].finished) {
                             room[rays[i].nextPoint.x][rays[i].nextPoint.y] =
@@ -456,7 +467,7 @@ int32_t main(int32_t argc, const char *argv[])
                             }
                             rays[i].travelledDistance++;
                         } else {
-                            PRINT("Finished ray #%d found\n", i);
+                            PRINT("Ray #%d has been finished off while looking for a next point\n", i);
                             allDone = areAllRaysDone(rays, rayCnt);
                         }
                     } else {
@@ -465,6 +476,7 @@ int32_t main(int32_t argc, const char *argv[])
                     }
                     printArray(room);
                 }
+                PRINT("Finished cycling through %d rays\n", rayCnt);
             }
             PRINT("All rays are done\n");
             clearArray(room);
@@ -482,7 +494,7 @@ int32_t main(int32_t argc, const char *argv[])
 }
 
 /** 
- * Array manipulattion functions 
+ * Array manipulation functions
  */
 static void clearArray(char array[][ROOM_DIMENSIONS])
 {
@@ -498,8 +510,8 @@ static void clearLastScreen(uint8_t lines)
     for (uint8_t i = 0; i < lines; ++i) {
         PRINT("\033[8F\033");  // Erase the current line
         PRINT("\b");
-    }
-    PRINT("\x1B[0E\n");  // Move to the beginning of the current line
+    
+}    PRINT("\x1B[0E\n");  // Move to the beginning of the current line
 }
 
 static void printArray(char array[][ROOM_DIMENSIONS])
@@ -521,4 +533,17 @@ static void printArray(char array[][ROOM_DIMENSIONS])
     usleep(1.3E5);
     clearLastScreen(ROOM_DIMENSIONS);
     */
+}
+
+static void printRays(Ray_t *ray, uint8_t rayCnt)
+{
+    for (uint8_t i = 0; i < rayCnt; ++i) {
+        printf("#%d: c[%d][%d] %s, n[%d][%d] %s, a[%d][%d] %s, dir %s, dst %d, jr? %s, f? %s\n", 
+            i,
+            ray[i].currentPoint.x, ray[i].currentPoint.y, ELEMENTS_STR[ray[i].currentPoint.type],
+            ray[i].nextPoint.x, ray[i].nextPoint.y, ELEMENTS_STR[ray[i].nextPoint.type],
+            ray[i].activePoint.x, ray[i].activePoint.y, ELEMENTS_STR[ray[i].activePoint.type],
+            DIRECTION_STR[ray[i].direction], ray[i].travelledDistance, 
+            BOOL_STR[ray[i].justReflected], BOOL_STR[ray[i].finished]);
+    }
 }
