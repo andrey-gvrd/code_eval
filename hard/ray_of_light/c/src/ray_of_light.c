@@ -1,10 +1,13 @@
 #include <stdio.h>  // printf
-//#include <unistd.h> // usleep
+#include <stdint.h>
+#include <unistd.h> // usleep
 
 #define ROOM_DIMENSIONS     (10)
-#define MAX_DISTANCE        (40)
-#define MAX_RAYS            (23)
-#define DEBUG_OUTPUT
+#define MAX_DISTANCE        (20)
+#define MAX_RAYS            (256)
+
+#define xDEBUG_OUTPUT
+#define xANIMATION
 
 #ifdef DEBUG_OUTPUT
  #define PRINT(...) printf(__VA_ARGS__);
@@ -68,7 +71,6 @@ typedef struct {
 static void clearArray(char array[][ROOM_DIMENSIONS]);
 static void clearLastScreen(uint8_t lines);
 static void printArray(char array[][ROOM_DIMENSIONS]);
-static void printRays(Ray_t *ray, uint8_t rayCnt);
 
 static Elements_t charToType(char c)
 {
@@ -179,6 +181,7 @@ static void getActivePoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
             PRINT("Wrong ray direction: %s\n", DIRECTION_STR[ray->direction]);
         }
     }
+
     if (!isActivePoint(room, &(ray->activePoint), ray->currentPoint.type)) {
         ray->finished = true;
         PRINT("Ray's done because inactive point has been reached\n");
@@ -196,7 +199,7 @@ static Direction_t oppositeDirection(Direction_t inDir)
     return outDir;
 }
 
-static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
+static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray, uint8_t startIndex)
 {
     PRINT("Current: %s, Active: %s\n", 
         ELEMENTS_STR[ray->currentPoint.type], ELEMENTS_STR[ray->activePoint.type]);
@@ -277,10 +280,12 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                start a new ray there with the same direction as the point is in relation
                to the prism, i.e. downRight point of the prism has downRight outgoing 
                direction. */
-            uint8_t rayIndex = 0;
             PRINT("Ray is finished because it entered into a prism\n");
+            uint8_t rayIndex = rayCnt - startIndex;
+            PRINT("rayIndex = rayCnt - startIndex = %d - %d = %d\n", rayCnt, startIndex, rayIndex);
             ray->finished = true;   // Ray entering a prism is finished
             Point_t prismPoint = ray->activePoint;
+            uint8_t distance = ray->travelledDistance;
             PRINT("Prism encountered at [%d][%d]\n", 
                 prismPoint.x, prismPoint.y);
             /* Hacky way to iterate through direction enums */
@@ -289,9 +294,8 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                     PRINT("Checking direction: %s\n", DIRECTION_STR[dir]);
                     if (oppositeDirection(ray->direction) != dir) {
                         if (rayCnt < MAX_RAYS) {
-                            rayIndex++;
                             PRINT("Creating new ray #%d at %s from prism location\n", 
-                                rayIndex, DIRECTION_STR[dir]);
+                                startIndex + rayIndex, DIRECTION_STR[dir]);
                             /* Spawn a new ray */
                             /* Setting up the next point */
                             ray[rayIndex].nextPoint = getNeighbour(prismPoint, (Direction_t)dir);
@@ -318,15 +322,18 @@ static void getNextPoint(char room[][ROOM_DIMENSIONS], Ray_t *ray)
                             ray[rayIndex].currentPoint.type = ray[rayIndex].nextPoint.type;
                             /* Setting up ray's parameters */
                             ray[rayIndex].finished = false;
-                            ray[rayIndex].travelledDistance = 0;
+                            ray[rayIndex].travelledDistance = distance;
                             ray[rayIndex].justReflected = false;
-                            rayCnt++;
+                            PRINT("New ray inherited distance: %d\n", ray[rayIndex].travelledDistance);
                         } else {
                             printf("MAX AMOUNT OF RAYS HAS BEEN REACHED\n");
                         }
+                        rayIndex++;
+                        rayCnt++;
                     } else {
-                        PRINT("This is where the ray came from\n")
+                        PRINT("This is where the ray came from\n");
                     }
+
                 }
             }
             break;
@@ -423,17 +430,17 @@ int32_t main(int32_t argc, const char *argv[])
     Ray_t rays[MAX_RAYS];
 
     FILE *file = fopen(argv[1], "r");
-    char line[ROOM_DIMENSIONS];
+    char line[ROOM_DIMENSIONS + 1];
     uint8_t lineCnt = 0;
 
     while (fgets(line, ROOM_DIMENSIONS + 1, file)) {
         if (lineCnt == ROOM_DIMENSIONS) {
-            printArray(room);
+            //printArray(room);
             /* Find first rays */
             rayCnt = getEntryRays(room, rays);
             bool allDone = false;  // true if all rays are done
             while (!allDone) {
-                for (uint i = 0; i < rayCnt; i++) {
+                for (uint8_t i = 0; i < rayCnt; i++) {
                     if (rays[i].travelledDistance >= MAX_DISTANCE) {
                         PRINT("Ray #%d travelled for more than %d points and is done\n",
                             i, MAX_DISTANCE);
@@ -442,10 +449,8 @@ int32_t main(int32_t argc, const char *argv[])
                     /* Ray may be finished for variety of reasons */
                     if (!rays[i].finished) {
                         PRINT("Working with ray #%d\n", i);
-                        //printRays(rays, rayCnt);
                         getActivePoint(room, &rays[i]);
-                        getNextPoint(room, &rays[i]);
-                        //printRays(rays, rayCnt);
+                        getNextPoint(room, &rays[i], i);
                         /* Second check because it might have finished while inside */
                         if (!rays[i].finished) {
                             room[rays[i].nextPoint.x][rays[i].nextPoint.y] =
@@ -466,6 +471,8 @@ int32_t main(int32_t argc, const char *argv[])
                                 }
                             }
                             rays[i].travelledDistance++;
+                            PRINT("Ray #%d has now travelled for %d points\n", 
+                                i, rays[i].travelledDistance);
                         } else {
                             PRINT("Ray #%d has been finished off while looking for a next point\n", i);
                             allDone = areAllRaysDone(rays, rayCnt);
@@ -474,13 +481,15 @@ int32_t main(int32_t argc, const char *argv[])
                         PRINT("Finished ray #%d found\n", i);
                         allDone = areAllRaysDone(rays, rayCnt);
                     }
-                    printArray(room);
+                    //printArray(room);
                 }
                 PRINT("Finished cycling through %d rays\n", rayCnt);
             }
             PRINT("All rays are done\n");
+            printArray(room);
             clearArray(room);
             allDone = false;
+            rayCnt = 0;
             lineCnt = 0;
         } else {
             for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
@@ -508,15 +517,15 @@ static void clearArray(char array[][ROOM_DIMENSIONS])
 static void clearLastScreen(uint8_t lines)
 {
     for (uint8_t i = 0; i < lines; ++i) {
-        PRINT("\033[8F\033");  // Erase the current line
-        PRINT("\b");
-    
-}    PRINT("\x1B[0E\n");  // Move to the beginning of the current line
+        printf("\033[8F\033");  // Erase the current line
+        printf("\b");
+    }
+    printf("\x1B[0E\n");  // Move to the beginning of the current line
 }
 
 static void printArray(char array[][ROOM_DIMENSIONS])
 {
-    printf("\n");
+    //printf("\n");
     /* Print top index */
     for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
         PRINT("%d", i);
@@ -529,12 +538,13 @@ static void printArray(char array[][ROOM_DIMENSIONS])
         PRINT(" %d", i);   // Print right index
         printf("\n");
     }
-    /*
+#ifdef ANIMATION
     usleep(1.3E5);
     clearLastScreen(ROOM_DIMENSIONS);
-    */
+#endif
 }
 
+/*
 static void printRays(Ray_t *ray, uint8_t rayCnt)
 {
     for (uint8_t i = 0; i < rayCnt; ++i) {
@@ -547,3 +557,4 @@ static void printRays(Ray_t *ray, uint8_t rayCnt)
             BOOL_STR[ray[i].justReflected], BOOL_STR[ray[i].finished]);
     }
 }
+*/
