@@ -71,6 +71,7 @@ typedef struct {
 static void clearArray(char array[][ROOM_DIMENSIONS]);
 static void clearLastScreen(uint8_t lines);
 static void printArray(char array[][ROOM_DIMENSIONS]);
+static void printArrayAsLine(char array[][ROOM_DIMENSIONS]);
 
 static Elements_t charToType(char c)
 {
@@ -486,7 +487,7 @@ int32_t main(int32_t argc, const char *argv[])
                 PRINT("Finished cycling through %d rays\n", rayCnt);
             }
             PRINT("All rays are done\n");
-            printArray(room);
+            printArrayAsLine(room);
             clearArray(room);
             allDone = false;
             rayCnt = 0;
@@ -521,6 +522,16 @@ static void clearLastScreen(uint8_t lines)
         printf("\b");
     }
     printf("\x1B[0E\n");  // Move to the beginning of the current line
+}
+
+static void printArrayAsLine(char array[][ROOM_DIMENSIONS])
+{
+    for (uint8_t i = 0; i < ROOM_DIMENSIONS; ++i) {
+        for (uint8_t j = 0; j < ROOM_DIMENSIONS; ++j) {
+            printf("%c", array[j][i]);
+        }
+    }
+    printf("\n");
 }
 
 static void printArray(char array[][ROOM_DIMENSIONS])
